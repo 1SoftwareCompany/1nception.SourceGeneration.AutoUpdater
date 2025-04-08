@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Elders.Cronus.SourceGeneration.AutoUpdater
+namespace One.Inception.SourceGeneration.AutoUpdater
 {
     public static class StringExtensions
     {
