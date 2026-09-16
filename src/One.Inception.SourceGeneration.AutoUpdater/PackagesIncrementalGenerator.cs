@@ -25,7 +25,7 @@ public class PackagesIncrementalGenerator : IIncrementalGenerator
             {
                 int theCurrentVersion = references.OrderByDescending(x => x.Version.Major).First().Version.Major;
 
-                if (theCurrentVersion != 12)
+                if (theCurrentVersion != 13)
                 {
                     spc.AddSource("ReadMe" + FileExtension, GetPleaseUpdateAllInceptionPackagesMessage());
                     return;
@@ -85,7 +85,7 @@ using System.Linq;
             _logger = logger;
         }}
         
-        public void Bootstrap()
+        public async Task BootstrapAsync()
         {{
             var allAutoUpdates = GetAutoUpdates();
         
@@ -94,8 +94,13 @@ using System.Linq;
             {{
                 var id = new AutoUpdaterId(_boundedContext.Name, _inceptionContextAccessor.Context.Tenant);
                 var command = new BulkRequestAutoUpdate(id, _boundedContext.Name, allAutoUpdates, DateTimeOffset.UtcNow);
-                 _publisher.Publish(command);
+                await _publisher.PublishAsync(command);
                }}
+        }}
+
+        public Task BootstrapAsync(IEnumerable<string> tenants) // this method was only created to reload new tenants when they are started. I don't think this needs to be handled in here at this stage.
+        {{
+            return Task.CompletedTask; 
         }}
         
         private bool DoSanityCheck(IEnumerable<SingleAutoUpdate> current)
