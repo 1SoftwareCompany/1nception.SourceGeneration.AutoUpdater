@@ -68,7 +68,8 @@ using System.Linq;
    {{
         private readonly IEnumerable<IAutoUpdate> _autoUpdates;
         private readonly IPublisher<ICommand> _publisher;
-        private readonly BoundedContext _boundedContext;     
+        private readonly BoundedContext _boundedContext;
+        private readonly InceptionHostOptions _hostOptions;
         private readonly IInceptionContextAccessor _inceptionContextAccessor;
         private readonly ILogger<{className}> _logger;
         
@@ -76,26 +77,30 @@ using System.Linq;
         private const string OneInceptionDefaultNamespace = ""One.Inception"";
         private const int Modifier = 100;
           
-        public {className}(IEnumerable<IAutoUpdate> autoUpdates, IPublisher<ICommand> publisher, IOptions<BoundedContext> bcProvider, IInceptionContextAccessor inceptionContextAccessor, ILogger<{className}> logger)
+        public {className}(IEnumerable<IAutoUpdate> autoUpdates, IPublisher<ICommand> publisher, IOptions<InceptionHostOptions> hostOptions, IOptions<BoundedContext> bcProvider, IInceptionContextAccessor inceptionContextAccessor, ILogger<{className}> logger)
         {{
             _autoUpdates = autoUpdates;
             _publisher = publisher;
             _boundedContext = bcProvider.Value;
+            _hostOptions = hostOptions.Value;
             _inceptionContextAccessor = inceptionContextAccessor;
             _logger = logger;
         }}
         
         public async Task BootstrapAsync()
         {{
-            var allAutoUpdates = GetAutoUpdates();
-        
-            bool isPropoerlyConfigured = DoSanityCheck(allAutoUpdates);
-            if(isPropoerlyConfigured)
+            if(_hostOptions.AutoUpdatesEnabled)
             {{
-                var id = new AutoUpdaterId(_boundedContext.Name, _inceptionContextAccessor.Context.Tenant);
-                var command = new BulkRequestAutoUpdate(id, _boundedContext.Name, allAutoUpdates, DateTimeOffset.UtcNow);
-                await _publisher.PublishAsync(command);
-               }}
+                var allAutoUpdates = GetAutoUpdates();
+        
+                bool isPropoerlyConfigured = DoSanityCheck(allAutoUpdates);
+                if(isPropoerlyConfigured)
+                {{
+                    var id = new AutoUpdaterId(_boundedContext.Name, _inceptionContextAccessor.Context.Tenant);
+                    var command = new BulkRequestAutoUpdate(id, _boundedContext.Name, allAutoUpdates, DateTimeOffset.UtcNow);
+                    await _publisher.PublishAsync(command);
+                }}
+            }}
         }}
 
         public Task BootstrapAsync(IEnumerable<string> tenants) // this method was only created to reload new tenants when they are started. I don't think this needs to be handled in here at this stage.
